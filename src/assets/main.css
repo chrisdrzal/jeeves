@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: dark;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: #071822;
+}
+
+html, body, #app {
+  margin: 0;
+  min-height: 100%;
+  min-width: 0;
+  background:
+    radial-gradient(circle at top, rgba(23, 43, 60, 0.9), rgba(5, 16, 24, 1) 40%),
+    #071822;
+  color: #e2e8f0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
