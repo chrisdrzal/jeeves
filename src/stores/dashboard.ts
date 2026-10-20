@@ -1,4 +1,7 @@
 import { defineStore } from 'pinia'
+import { reactive } from 'vue'
+import { fetchWeatherData } from '@/services/weatherService'
+import type { WeatherData, WeatherForecastDay } from '@/types/weather'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const navItems = [
@@ -14,26 +17,39 @@ export const useDashboardStore = defineStore('dashboard', () => {
     { label: 'Settings' },
   ]
 
-  const weather = {
+  const weather = reactive({
     city: 'Denver, CO',
-    temp: 58,
-    summary: 'Partly Cloudy',
-    humidity: 42,
-    wind: 8,
-    sunrise: '6:08 AM',
-    sunset: '7:48 PM',
-    hourly: [
-      { time: '7 PM', temp: 56 },
-      { time: '9 PM', temp: 52 },
-      { time: '11 PM', temp: 48 },
-      { time: '1 AM', temp: 45 },
-      { time: '3 AM', temp: 43 },
-      { time: '5 AM', temp: 42 },
-    ],
+    temp: null as number | null,
+    summary: 'Loading weather…',
+    humidity: null as number | null,
+    wind: null as number | null,
+    windDirection: '',
+    sunrise: '',
+    sunset: '',
+    updatedAt: '',
+    loading: true,
+    error: '',
+    forecast: [] as WeatherForecastDay[],
+  })
+
+  const refreshWeather = async () => {
+    weather.loading = true
+    weather.error = ''
+
+    try {
+      const data: WeatherData = await fetchWeatherData()
+      Object.assign(weather, data)
+    } catch {
+      weather.error = 'Unable to load weather. Check your connection and try again.'
+      weather.summary = 'Weather unavailable'
+    } finally {
+      weather.loading = false
+    }
   }
 
   return {
     navItems,
     weather,
+    refreshWeather,
   }
 })

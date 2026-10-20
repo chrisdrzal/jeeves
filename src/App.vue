@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +11,6 @@ import {
   Home,
   Lightbulb,
   Menu,
-  MoonStar,
   Plug,
   Shield,
   Sun,
@@ -26,6 +25,10 @@ import { CanvasRenderer } from 'echarts/renderers'
 use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const store = useDashboardStore()
+
+onMounted(() => {
+  void store.refreshWeather()
+})
 
 const navItems = [
   { label: 'Home', icon: Home, active: true },
@@ -42,20 +45,26 @@ const navItems = [
 
 const chartOption = computed(() => ({
   animation: false,
-  grid: { left: 18, right: 12, top: 18, bottom: 16 },
+  grid: { left: 18, right: 12, top: 34, bottom: 16 },
   tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
+  legend: {
+    data: ['High', 'Low'],
+    top: 0,
+    right: 8,
+    textStyle: { color: '#9ca3af', fontSize: 11 },
+    itemWidth: 10,
+    itemHeight: 8,
+  },
   xAxis: {
     type: 'category',
-    boundaryGap: false,
+    boundaryGap: true,
     axisLine: { show: false },
     axisTick: { show: false },
     axisLabel: { color: '#9ca3af', fontSize: 11 },
-    data: ['12 AM', '2 AM', '4 AM', '6 AM', '8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM', '8 PM'],
+    data: store.weather.forecast.map((day) => day.day),
   },
   yAxis: {
     type: 'value',
-    min: 0,
-    max: 5,
     axisLine: { show: false },
     axisTick: { show: false },
     axisLabel: { show: false },
@@ -65,12 +74,20 @@ const chartOption = computed(() => ({
     {
       type: 'line',
       smooth: true,
-      symbol: 'none',
-      lineStyle: { width: 3, color: '#22c55e' },
-      areaStyle: {
-        color: 'rgba(34, 197, 94, 0.12)',
-      },
-      data: [2.2, 1.6, 1.2, 1.8, 2.5, 3.6, 3.1, 4.1, 3.7, 2.4, 2.7],
+      name: 'High',
+      symbol: 'circle',
+      symbolSize: 6,
+      lineStyle: { width: 2, color: '#f59e0b' },
+      data: store.weather.forecast.map((day) => day.high),
+    },
+    {
+      type: 'line',
+      smooth: true,
+      name: 'Low',
+      symbol: 'circle',
+      symbolSize: 6,
+      lineStyle: { width: 2, color: '#38bdf8' },
+      data: store.weather.forecast.map((day) => day.low),
     },
   ],
 }))
@@ -80,21 +97,20 @@ const chartOption = computed(() => ({
   <div class="min-h-screen bg-[#071822] text-slate-100">
     <div class="mx-auto max-w-[1600px] border border-slate-700/60 bg-[#071822] shadow-2xl shadow-slate-950/40">
       <header class="flex items-center justify-between border-b border-slate-700/70 bg-[#081d2a]/95 px-6 py-4">
-        <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20 text-sky-300 ring-1 ring-sky-400/30">
-            <CloudSun class="h-5 w-5" />
-          </div>
-          <div>
-            <h1 class="text-3xl font-semibold tracking-tight text-slate-100">Jeeves</h1>
-            <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
-              <span>Home</span>
-              <span class="text-slate-500">•</span>
-              <span>Energy</span>
-              <span class="text-slate-500">•</span>
-              <span>Security</span>
-              <span class="text-slate-500">•</span>
-              <span>Everything in One Place</span>
-            </div>
+        <div class="flex min-w-0 items-center gap-5">
+          <img
+            src="/Elegant%20Jeeves%20Monocle%20Emblem.png"
+            alt="Jeeves"
+            class="h-16 w-auto shrink-0"
+          />
+          <div class="hidden items-center gap-2 text-xs text-slate-400 sm:flex">
+            <span>Home</span>
+            <span class="text-slate-500">•</span>
+            <span>Energy</span>
+            <span class="text-slate-500">•</span>
+            <span>Security</span>
+            <span class="text-slate-500">•</span>
+            <span>Everything in One Place</span>
           </div>
         </div>
 
@@ -142,7 +158,7 @@ const chartOption = computed(() => ({
                     <CloudSun class="h-7 w-7" />
                   </div>
                   <div>
-                    <p class="text-4xl font-semibold tracking-tight text-slate-100">{{ store.weather.temp }}°F</p>
+                    <p class="text-4xl font-semibold tracking-tight text-slate-100">{{ store.weather.temp ?? '—' }}°F</p>
                     <p class="text-xl text-slate-300">{{ store.weather.summary }}</p>
                   </div>
                 </div>
@@ -151,33 +167,41 @@ const chartOption = computed(() => ({
                   <div class="flex items-center gap-2">
                     <Droplets class="h-4 w-4 text-sky-300" />
                     <span>Humidity</span>
-                    <span class="ml-2 font-semibold text-slate-100">{{ store.weather.humidity }}%</span>
+                    <span class="ml-2 font-semibold text-slate-100">{{ store.weather.humidity ?? '—' }}%</span>
                   </div>
                   <div class="flex items-center gap-2">
                     <Wind class="h-4 w-4 text-sky-300" />
                     <span>Wind</span>
-                    <span class="ml-2 font-semibold text-slate-100">{{ store.weather.wind }} mph NW</span>
+                    <span class="ml-2 font-semibold text-slate-100">{{ store.weather.wind ?? '—' }} mph {{ store.weather.windDirection }}</span>
                   </div>
                   <div class="flex items-center gap-2">
                     <Sun class="h-4 w-4 text-amber-300" />
                     <span>Sunrise</span>
                     <span class="ml-2 font-semibold text-slate-100">{{ store.weather.sunrise }}</span>
                   </div>
+                  <div class="flex items-center gap-2">
+                    <Sun class="h-4 w-4 text-amber-300" />
+                    <span>Sunset</span>
+                    <span class="ml-2 font-semibold text-slate-100">{{ store.weather.sunset }}</span>
+                  </div>
                 </div>
               </div>
 
-              <div class="mt-7 grid grid-cols-6 gap-3">
+              <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <div
-                  v-for="slot in store.weather.hourly"
-                  :key="slot.time"
-                  class="rounded-2xl border border-slate-700/80 bg-slate-800/60 p-3 text-center"
+                  v-for="day in store.weather.forecast"
+                  :key="day.date"
+                  class="rounded-xl border border-slate-700/80 bg-slate-800/60 p-3 text-center"
                 >
                   <div class="mb-3 flex justify-center text-slate-300">
-                    <MoonStar v-if="slot.temp < 50" class="h-5 w-5 text-slate-200" />
-                    <CloudSun v-else class="h-5 w-5 text-amber-300" />
+                    <CloudSun class="h-5 w-5 text-amber-300" />
                   </div>
-                  <div class="text-2xl font-light text-slate-100">{{ slot.temp }}°</div>
-                  <div class="mt-2 text-xs text-slate-400">{{ slot.time }}</div>
+                  <div class="text-sm font-medium text-slate-100">{{ day.day }}</div>
+                  <div class="mt-1 text-xs text-slate-400">{{ day.summary }}</div>
+                  <div class="mt-3 whitespace-nowrap text-sm text-slate-100">
+                    <span class="font-semibold">{{ day.high }}°</span>
+                    <span class="ml-1 text-slate-400">{{ day.low }}°</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -190,24 +214,26 @@ const chartOption = computed(() => ({
                   </div>
                   <h2 class="text-xl font-semibold text-slate-100">Weather</h2>
                 </div>
-                <Button variant="secondary" size="sm" class="rounded-lg border border-slate-600/70 bg-slate-800/70 text-slate-200">
-                  Today
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="rounded-lg border border-slate-600/70 bg-slate-800/70 text-slate-200"
+                  :disabled="store.weather.loading"
+                  @click="store.refreshWeather()"
+                >
+                  {{ store.weather.loading ? 'Updating…' : 'Refresh' }}
                 </Button>
               </div>
 
               <div class="rounded-2xl border border-slate-700/80 bg-slate-900/70 p-4">
                 <div class="mb-3 flex items-center justify-between text-sm text-slate-300">
                   <span>Forecast</span>
-                  <span class="text-sky-300">Updated 2 min ago</span>
+                  <span v-if="store.weather.error" class="text-rose-300">{{ store.weather.error }}</span>
+                  <span v-else-if="store.weather.loading" class="text-slate-400">Loading live weather…</span>
+                  <span v-else class="text-sky-300">Updated {{ store.weather.updatedAt }}</span>
                 </div>
                 <div class="h-40">
                   <VChart :option="chartOption" autoresize style="height: 100%; width: 100%;" />
-                </div>
-                <div class="mt-4 flex items-center justify-between text-xs text-slate-400">
-                  <span>12 AM</span>
-                  <span>6 AM</span>
-                  <span>12 PM</span>
-                  <span>6 PM</span>
                 </div>
               </div>
 
