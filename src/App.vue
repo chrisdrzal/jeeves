@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import HomeAssistantSensors from '@/components/HomeAssistantSensors.vue'
+import { useHomeAssistantStore } from '@/stores/homeAssistant'
+import { hasSavedHomeAssistantAuth } from '@/services/homeAssistantService'
 import { computed, onMounted } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { Button } from '@/components/ui/button'
@@ -25,9 +28,17 @@ import { CanvasRenderer } from 'echarts/renderers'
 use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const store = useDashboardStore()
+const ha = useHomeAssistantStore()
 
 onMounted(() => {
   void store.refreshWeather()
+
+  if (
+    new URLSearchParams(window.location.search).has('auth_callback') ||
+    hasSavedHomeAssistantAuth()
+  ) {
+    void ha.connect()
+  }
 })
 
 const navItems = [
@@ -248,6 +259,7 @@ const chartOption = computed(() => ({
                 </div>
               </div>
             </div>
+            <HomeAssistantSensors />
           </section>
         </main>
       </div>
