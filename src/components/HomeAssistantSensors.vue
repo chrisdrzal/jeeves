@@ -4,6 +4,11 @@ import { useHomeAssistantStore } from '@/stores/homeAssistant'
 
 const ha = useHomeAssistantStore()
 const sensorClasses = new Set(['temperature', 'humidity', 'battery'])
+const sensorClassOrder = ['temperature', 'humidity', 'battery']
+
+const getRoomName = (entity: (typeof ha.entities)[string]) =>
+  String(entity.attributes.friendly_name ?? entity.entity_id)
+    .replace(/\s+(temperature|humidity|battery)$/i, '')
 
 // First pass: show all climate/battery readings returned by Home Assistant.
 // Once the Govee entity IDs are confirmed, we can filter by device or room.
@@ -13,10 +18,14 @@ const sensors = computed(() =>
       entity.entity_id.startsWith('sensor.') &&
       sensorClasses.has(String(entity.attributes.device_class ?? '')),
     )
-    .sort((a, b) =>
-      String(a.attributes.friendly_name ?? a.entity_id)
-        .localeCompare(String(b.attributes.friendly_name ?? b.entity_id)),
-    ),
+    .sort((a, b) => {
+      const roomOrder = getRoomName(a).localeCompare(getRoomName(b))
+      if (roomOrder !== 0) return roomOrder
+
+      const aClass = String(a.attributes.device_class ?? '')
+      const bClass = String(b.attributes.device_class ?? '')
+      return sensorClassOrder.indexOf(aClass) - sensorClassOrder.indexOf(bClass)
+    }),
 )
 </script>
 
