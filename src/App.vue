@@ -2,7 +2,7 @@
 import HomeAssistantSensors from '@/components/HomeAssistantSensors.vue'
 import { useHomeAssistantStore } from '@/stores/homeAssistant'
 import { hasSavedHomeAssistantAuth } from '@/services/homeAssistantService'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,8 +29,34 @@ use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer
 
 const store = useDashboardStore()
 const ha = useHomeAssistantStore()
+const now = ref(new Date())
+const currentDate = computed(() =>
+  new Intl.DateTimeFormat(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(now.value),
+)
+const currentTime = computed(() => {
+  const parts = new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).formatToParts(now.value)
+
+  return {
+    time: `${parts.find((part) => part.type === 'hour')?.value}:${parts.find((part) => part.type === 'minute')?.value}`,
+    period: parts.find((part) => part.type === 'dayPeriod')?.value ?? '',
+  }
+})
+let clockInterval: ReturnType<typeof setInterval>
 
 onMounted(() => {
+  clockInterval = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
+
   void store.refreshWeather()
 
   if (
@@ -40,6 +66,8 @@ onMounted(() => {
     void ha.connect()
   }
 })
+
+onUnmounted(() => clearInterval(clockInterval))
 
 const navItems = [
   { label: 'Home', icon: Home, active: true },
@@ -127,10 +155,10 @@ const chartOption = computed(() => ({
 
         <div class="flex items-center gap-4">
           <div class="text-right text-sm text-slate-300">
-            <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Monday, Apr 28, 2025</div>
+            <div class="text-xs uppercase tracking-[0.2em] text-slate-500">{{ currentDate }}</div>
             <div class="mt-1 flex items-center gap-3 text-[2.1rem] font-medium leading-none tracking-tight text-slate-100">
-              <span>6:24</span>
-              <span class="text-lg font-semibold text-slate-400">PM</span>
+              <span>{{ currentTime.time }}</span>
+              <span class="text-lg font-semibold text-slate-400">{{ currentTime.period }}</span>
             </div>
           </div>
           <div class="flex items-center gap-2 rounded-xl border border-slate-600/70 bg-slate-900/70 px-3 py-2">
