@@ -1,12 +1,15 @@
 import {
+  callService,
   createConnection,
   ERR_INVALID_AUTH,
   getAuth,
   subscribeEntities,
+  type Connection,
   type HassEntities,
 } from 'home-assistant-js-websocket'
 
 const TOKEN_KEY = 'jeeves:homeassistant:tokens'
+let activeConnection: Connection | undefined
 
 export function hasSavedHomeAssistantAuth(): boolean {
   return window.localStorage.getItem(TOKEN_KEY) !== null
@@ -53,6 +56,7 @@ export async function connectHomeAssistant(
     throw error
   }
 
+  activeConnection = connection
   connection.addEventListener('disconnected', () => onConnectionStatus(false))
   connection.addEventListener('ready', () => onConnectionStatus(true))
   onConnectionStatus(true)
@@ -62,4 +66,16 @@ export async function connectHomeAssistant(
   if (new URLSearchParams(window.location.search).has('auth_callback')) {
     window.history.replaceState(window.history.state, '', window.location.pathname)
   }
+}
+
+export async function toggleHomeAssistantLight(entityId: string): Promise<void> {
+  const domain = entityId.split('.')[0]
+  if (domain !== 'light' && domain !== 'switch') {
+    throw new Error('Only light and switch entities can be controlled here.')
+  }
+  if (!activeConnection?.connected) {
+    throw new Error('Home Assistant is disconnected. Reconnect before controlling lights.')
+  }
+
+  await callService(activeConnection, domain, 'toggle', { entity_id: entityId })
 }

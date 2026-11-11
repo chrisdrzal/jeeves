@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HomeAssistantSensors from '@/components/HomeAssistantSensors.vue'
+import LightsPanel from '@/components/LightsPanel.vue'
 import { useHomeAssistantStore } from '@/stores/homeAssistant'
 import { hasSavedHomeAssistantAuth } from '@/services/homeAssistantService'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -75,7 +76,7 @@ const navItems = [
   { label: 'Home', icon: Home },
   { label: 'Smart Plugs/Switches', icon: Plug },
   { label: 'Indoor/Outdoor Climate', icon: Thermometer },
-  { label: 'Lighting', icon: Lightbulb },
+  { label: 'Lights', icon: Lightbulb },
   { label: 'Security', icon: Shield },
   { label: 'Energy', icon: Sun },
   { label: 'Cameras', icon: Bell },
@@ -192,7 +193,8 @@ const chartOption = computed(() => ({
         </aside>
 
         <main class="flex-1 p-6">
-          <section v-if="activeNavItem === 'Indoor/Outdoor Climate'" class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+          <LightsPanel v-if="activeNavItem === 'Lights'" />
+          <section v-else-if="activeNavItem === 'Indoor/Outdoor Climate'" class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
             <div class="rounded-[28px] border border-slate-700/70 bg-[rgba(15,23,42,0.85)] p-6 shadow-inner shadow-slate-950/30">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">

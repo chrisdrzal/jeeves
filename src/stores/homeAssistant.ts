@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import type { HassEntities } from 'home-assistant-js-websocket'
-import { connectHomeAssistant } from '@/services/homeAssistantService'
+import {
+  connectHomeAssistant,
+  toggleHomeAssistantLight,
+} from '@/services/homeAssistantService'
 
 export const useHomeAssistantStore = defineStore('homeAssistant', () => {
   // A complete replacement object is supplied on each subscription update.
@@ -33,5 +36,12 @@ export const useHomeAssistantStore = defineStore('homeAssistant', () => {
     }
   }
 
-  return { entities, connected, connecting, started, error, connect }
+  async function toggleLight(entityId: string) {
+    if (!connected.value) {
+      throw new Error('Home Assistant is disconnected. Reconnect before controlling lights.')
+    }
+    await toggleHomeAssistantLight(entityId)
+  }
+
+  return { entities, connected, connecting, started, error, connect, toggleLight }
 })
