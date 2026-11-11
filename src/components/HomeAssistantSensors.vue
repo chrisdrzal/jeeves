@@ -5,10 +5,24 @@ import { useHomeAssistantStore } from '@/stores/homeAssistant'
 const ha = useHomeAssistantStore()
 const sensorClasses = new Set(['temperature', 'humidity', 'battery'])
 const sensorClassOrder = ['temperature', 'humidity', 'battery']
+const roomOrder = [
+  ['master bedroom'],
+  ['guest bedroom 1', 'guest room 1'],
+  ['guest bedroom 2', 'guest room 2'],
+  ['livingroom', 'living room'],
+  ['office'],
+  ['basement'],
+]
 
 const getRoomName = (entity: (typeof ha.entities)[string]) =>
   String(entity.attributes.friendly_name ?? entity.entity_id)
     .replace(/\s+(temperature|humidity|battery)$/i, '')
+
+const getRoomRank = (roomName: string) => {
+  const normalizedName = roomName.toLowerCase().replace(/\s+/g, ' ').trim()
+  const rank = roomOrder.findIndex((aliases) => aliases.includes(normalizedName))
+  return rank === -1 ? roomOrder.length : rank
+}
 
 // First pass: show all climate/battery readings returned by Home Assistant.
 // Once the Govee entity IDs are confirmed, we can filter by device or room.
@@ -19,8 +33,14 @@ const sensors = computed(() =>
       sensorClasses.has(String(entity.attributes.device_class ?? '')),
     )
     .sort((a, b) => {
-      const roomOrder = getRoomName(a).localeCompare(getRoomName(b))
-      if (roomOrder !== 0) return roomOrder
+      const aRoom = getRoomName(a)
+      const bRoom = getRoomName(b)
+      const roomRankDifference = getRoomRank(aRoom) - getRoomRank(bRoom)
+      if (roomRankDifference !== 0) return roomRankDifference
+      if (getRoomRank(aRoom) === roomOrder.length) {
+        const alphabeticalDifference = aRoom.localeCompare(bRoom)
+        if (alphabeticalDifference !== 0) return alphabeticalDifference
+      }
 
       const aClass = String(a.attributes.device_class ?? '')
       const bClass = String(b.attributes.device_class ?? '')

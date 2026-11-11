@@ -17,6 +17,7 @@ import {
   Plug,
   Shield,
   Sun,
+  Thermometer,
   Wind,
 } from 'lucide-vue-next'
 import VChart from 'vue-echarts'
@@ -29,6 +30,7 @@ use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer
 
 const store = useDashboardStore()
 const ha = useHomeAssistantStore()
+const activeNavItem = ref('Indoor/Outdoor Climate')
 const now = ref(new Date())
 const currentDate = computed(() =>
   new Intl.DateTimeFormat(undefined, {
@@ -70,14 +72,13 @@ onMounted(() => {
 onUnmounted(() => clearInterval(clockInterval))
 
 const navItems = [
-  { label: 'Home', icon: Home, active: true },
-  { label: 'Lights', icon: Lightbulb },
-  { label: 'Plugs', icon: Plug },
-  { label: 'Climate', icon: CloudRain },
+  { label: 'Home', icon: Home },
+  { label: 'Smart Plugs/Switches', icon: Plug },
+  { label: 'Indoor/Outdoor Climate', icon: Thermometer },
+  { label: 'Lighting', icon: Lightbulb },
   { label: 'Security', icon: Shield },
   { label: 'Energy', icon: Sun },
   { label: 'Cameras', icon: Bell },
-  { label: 'Network', icon: Wind },
   { label: 'Database', icon: CloudSun },
   { label: 'Settings', icon: Menu },
 ]
@@ -176,10 +177,12 @@ const chartOption = computed(() => ({
               <button
                 :class="[
                   'flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-all',
-                  item.active
+                  activeNavItem === item.label
                     ? 'bg-sky-500/20 text-sky-200 shadow-inner shadow-sky-500/20 ring-1 ring-sky-400/30'
                     : 'text-slate-300 hover:bg-slate-800/70 hover:text-white',
                 ]"
+                :aria-current="activeNavItem === item.label ? 'page' : undefined"
+                @click="activeNavItem = item.label"
               >
                 <component :is="item.icon" class="h-4 w-4" />
                 <span>{{ item.label }}</span>
@@ -189,7 +192,7 @@ const chartOption = computed(() => ({
         </aside>
 
         <main class="flex-1 p-6">
-          <section class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+          <section v-if="activeNavItem === 'Indoor/Outdoor Climate'" class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
             <div class="rounded-[28px] border border-slate-700/70 bg-[rgba(15,23,42,0.85)] p-6 shadow-inner shadow-slate-950/30">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -289,6 +292,7 @@ const chartOption = computed(() => ({
             </div>
             <HomeAssistantSensors />
           </section>
+          <h1 v-else class="text-2xl font-semibold text-slate-100">{{ activeNavItem }}</h1>
         </main>
       </div>
     </div>
